@@ -3,6 +3,7 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect } from "react";
+import { ACESFilmicToneMapping, PCFSoftShadowMap } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import AerialOverlook from "@/components/scene/zones/AerialOverlook";
 import ArrayRingAlpha from "@/components/scene/zones/ArrayRingAlpha";
@@ -12,7 +13,6 @@ import Lighting from "@/components/scene/Lighting";
 import Sky from "@/components/scene/Sky";
 import SpatialAudioRig from "@/components/scene/SpatialAudioRig";
 import Terrain from "@/components/scene/Terrain";
-import { SCENE_COLORS } from "@/components/scene/PlaceholderCaldera";
 import type { ZoneId } from "@/content/zones";
 import { useSceneStore } from "@/lib/scene-state";
 
@@ -164,8 +164,13 @@ export default function ExperienceCanvas() {
           far: 400,
         }}
         dpr={[1, 1.75]}
-        gl={{ antialias: true }}
-        shadows
+        gl={{
+          antialias: true,
+          powerPreference: "high-performance",
+          toneMapping: ACESFilmicToneMapping,
+          toneMappingExposure: 1.25,
+        }}
+        shadows={{ type: PCFSoftShadowMap }}
       >
         <ZoneView />
         <SpatialAudioRig />
@@ -176,7 +181,6 @@ export default function ExperienceCanvas() {
           dampingFactor={0.06}
           autoRotateSpeed={0.35}
         />
-        {!isVault && <color attach="background" args={[SCENE_COLORS.sky]} />}
       </Canvas>
       <span className="sr-only">{zoneHint(currentZone)}</span>
     </div>
