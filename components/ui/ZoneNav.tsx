@@ -4,7 +4,11 @@ import { zones, type ZoneId } from "@/content/zones";
 import { useSceneStore } from "@/lib/scene-state";
 
 /** Zones available in the current build. Later milestones unlock the rest. */
-const ENABLED_ZONES: ZoneId[] = ["aerial-overlook", "array-ring-alpha"];
+const ENABLED_ZONES: ZoneId[] = [
+  "aerial-overlook",
+  "array-ring-alpha",
+  "heliospire-tower",
+];
 
 export default function ZoneNav() {
   const currentZone = useSceneStore((s) => s.currentZone);
