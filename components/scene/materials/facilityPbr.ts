@@ -63,22 +63,22 @@ export const PBR = {
     envMapIntensity: 0.8,
   },
   vaultFloor: {
-    color: "#12161c",
+    color: "#1e2836",
+    roughness: 0.82,
+    metalness: 0.12,
+    envMapIntensity: 0.3,
+  },
+  vaultShaft: {
+    color: "#252d3a",
     roughness: 0.88,
     metalness: 0.18,
     envMapIntensity: 0.25,
   },
-  vaultShaft: {
-    color: "#1a1f28",
-    roughness: 0.92,
-    metalness: 0.22,
-    envMapIntensity: 0.2,
-  },
   vaultRack: {
-    color: SCENE_COLORS.panel,
-    roughness: 0.42,
-    metalness: 0.55,
-    envMapIntensity: 0.35,
+    color: "#243040",
+    roughness: 0.48,
+    metalness: 0.5,
+    envMapIntensity: 0.4,
   },
   vaultBus: {
     color: SCENE_COLORS.steel,
@@ -87,10 +87,10 @@ export const PBR = {
     envMapIntensity: 0.5,
   },
   vaultConduit: {
-    color: "#2a323c",
-    roughness: 0.45,
-    metalness: 0.7,
-    envMapIntensity: 0.4,
+    color: "#3a4554",
+    roughness: 0.42,
+    metalness: 0.65,
+    envMapIntensity: 0.45,
   },
 } as const;
 

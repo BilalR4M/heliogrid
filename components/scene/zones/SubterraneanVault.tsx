@@ -186,39 +186,48 @@ function VaultLighting() {
   const timeOfDay = useSceneStore((s) => s.timeOfDay);
   const flow = getVaultFlow(timeOfDay);
   const accent = accentForMode(flow.mode);
-  const keyIntensity = flow.mode === "idle" ? 0.75 : 1.15;
+  // Three r155+ point/spot intensity is candela — ~1 is invisible indoors.
+  const keyCd = flow.mode === "idle" ? 55 : 85;
+  const fillCd = flow.mode === "idle" ? 35 : 50;
 
   return (
     <>
-      <ambientLight intensity={0.22} color="#1a2430" />
-      <hemisphereLight args={["#2a3a4a", "#0a0c10", 0.35]} />
+      <ambientLight intensity={0.45} color="#3a4a5c" />
+      <hemisphereLight args={["#5a6e82", "#121820", 0.55]} />
+      {/* Ceiling work LEDs above rack rows (VAULT_Y ≈ -18) */}
       <pointLight
-        position={[-6, -14.5, -2]}
-        intensity={keyIntensity}
-        distance={18}
+        position={[-5.5, VAULT_Y + 4.2, -2]}
+        intensity={keyCd}
+        distance={22}
+        decay={2}
         color={accent}
       />
       <pointLight
-        position={[6, -14.5, -2]}
-        intensity={keyIntensity}
-        distance={18}
+        position={[5.5, VAULT_Y + 4.2, -2]}
+        intensity={keyCd}
+        distance={22}
+        decay={2}
         color={accent}
       />
       <pointLight
-        position={[0, -14.5, 6]}
-        intensity={0.7}
-        distance={16}
-        color="#b0c4d8"
+        position={[0, VAULT_Y + 4.0, 5]}
+        intensity={fillCd}
+        distance={20}
+        decay={2}
+        color="#c5d4e4"
       />
       <spotLight
-        position={[0, -2, 0]}
-        angle={0.45}
-        penumbra={0.5}
-        intensity={1.4}
-        distance={28}
-        color="#9eb6c8"
+        position={[0, VAULT_Y + 8, 8]}
+        angle={0.55}
+        penumbra={0.65}
+        intensity={120}
+        distance={32}
+        decay={2}
+        color="#a8bdd0"
         castShadow={false}
-      />
+      >
+        <object3D attach="target" position={[0, VAULT_Y, 0]} />
+      </spotLight>
     </>
   );
 }
@@ -231,8 +240,8 @@ function VaultRacks({ mode }: { mode: VaultFlowMode }) {
   const stripGeo = useMemo(() => new THREE.BoxGeometry(1.25, 0.08, 0.08), []);
 
   const emissive = accentForMode(mode);
-  const rackIntensity = mode === "idle" ? 0.18 : 0.45;
-  const stripIntensity = mode === "idle" ? 0.35 : 1.1;
+  const rackIntensity = mode === "idle" ? 0.08 : 0.22;
+  const stripIntensity = mode === "idle" ? 0.45 : 1.35;
 
   const rackMat = useMemo(
     () => createVaultRackMaterial(emissive, rackIntensity),
@@ -301,7 +310,7 @@ function VaultRacks({ mode }: { mode: VaultFlowMode }) {
 
 function VaultConduits({ mode }: { mode: VaultFlowMode }) {
   const emissive = accentForMode(mode);
-  const intensity = mode === "idle" ? 0.25 : 0.85;
+  const intensity = mode === "idle" ? 0.35 : 1.15;
   const mat = useMemo(
     () => createVaultConduitMaterial(emissive, intensity),
     [emissive, intensity],
@@ -364,8 +373,8 @@ export default function SubterraneanVault() {
 
   return (
     <group>
-      <color attach="background" args={["#05070a"]} />
-      <fog attach="fog" args={["#080b10", 12, 48]} />
+      <color attach="background" args={["#0b1018"]} />
+      <fog attach="fog" args={["#0f1620", 16, 52]} />
       <VaultLighting />
 
       <mesh position={[0, -8, 0]} material={shaftMat}>

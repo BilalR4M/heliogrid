@@ -156,7 +156,7 @@ export default function ExperienceCanvas() {
   const isVault = currentZone === "subterranean-vault";
 
   return (
-    <div className={`h-dvh w-full ${isVault ? "bg-[#05070a]" : "bg-scene-sky"}`}>
+    <div className={`h-dvh w-full ${isVault ? "bg-[#0b1018]" : "bg-scene-sky"}`}>
       <Canvas
         camera={{
           position: [...ZONE_CAMERAS["aerial-overlook"].position],
