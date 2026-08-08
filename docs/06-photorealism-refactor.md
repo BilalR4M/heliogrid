@@ -572,10 +572,94 @@ export function createVaultRackMaterial(mode) {
 
 ---
 
-## Phase 5 — not yet specified in detail
+## Phase 5 — Post-Processing Pipeline
 
-Objective remains under "Core technical objectives" (post-processing:
-`EffectComposer`, bloom, SMAA). Write Phase 5’s detailed implementation section
-the same way Phases 1–4 are written — code + "Integration notes specific to
-this codebase" + a review checklist — and append it here before starting that
-phase’s implementation.
+### Objective
+Add a selective post-processing stack for light glints and crisp edges —
+bloom on bright speculars / emissives (receiver core, vault LEDs, panel
+clearcoat) and SMAA for edge stability — without turning the scene into a
+glow soup or blowing the 60fps budget.
+
+### Implementation
+
+```tsx
+// Preferred R3F path (maps to the spec's EffectComposer + bloom + SMAA intent).
+// Package: @react-three/postprocessing (wraps the `postprocessing` library).
+import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing';
+import { useSceneStore } from '@/lib/scene-state';
+
+/**
+ * Mount inside the existing R3F <Canvas> in Canvas.tsx — never a second
+ * WebGLRenderer / raw three/addons EffectComposer alongside R3F.
+ */
+export function ScenePostFx() {
+  const zone = useSceneStore((s) => s.currentZone);
+  const isVault = zone === 'subterranean-vault';
+
+  return (
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <Bloom
+        luminanceThreshold={isVault ? 0.55 : 0.75}
+        luminanceSmoothing={0.25}
+        intensity={isVault ? 0.55 : 0.35}
+        mipmapBlur
+      />
+      <SMAA />
+    </EffectComposer>
+  );
+}
+```
+
+Equivalent raw-three naming from the core objective:
+
+| Spec name | R3F / `postprocessing` equivalent |
+|---|---|
+| `EffectComposer` | `<EffectComposer>` from `@react-three/postprocessing` |
+| `UnrealBloomPass` | `<Bloom>` (mipmap blur; Unreal-style threshold bloom) |
+| `SMAAPass` | `<SMAA>` |
+
+Do **not** also enable R3F canvas `antialias: true` at full strength on top of
+SMAA in a way that doubles cost — Phase 1 already set `antialias: true`; with
+SMAA, prefer keeping MSAA off in the composer (`multisampling={0}`) and leave
+the canvas flag as-is unless profiling shows waste, then document the change.
+
+### Integration notes (specific to this codebase, not generic)
+
+- **Mount point:** `components/scene/Canvas.tsx` inside `<Canvas>`, as a sibling
+  of `ZoneView` / `OrbitControls`. New file e.g.
+  `components/scene/ScenePostFx.tsx` — keep Canvas readable.
+- **Dependency:** add `@react-three/postprocessing` (and its `postprocessing`
+  peer) via npm — not already in `package.json`. Pin compatible with R3F 9 /
+  Three 0.185.
+- **Tone mapping interaction:** Phase 1 already uses ACES + exposure 1.25 on
+  the renderer. Bloom thresholds must be tuned **after** ACES, not before
+  re-tuning exposure. If the whole frame blooms, raise `luminanceThreshold`
+  first; do not crank exposure down to compensate.
+- **Zone-aware intensity:** vault emissives (Phase 4) need slightly lower
+  threshold / modest intensity so conduits and status strips glint without
+  haloing the entire hall. Outdoor clearcoat + receiver need higher threshold
+  so only specular peaks bloom.
+- **`prefers-reduced-motion`:** optional — bloom is not motion, but some users
+  find heavy glow fatiguing. If easy, gate bloom intensity to ~0 when reduced
+  motion is set; SMAA can stay (it’s spatial, not temporal flicker). Flag at
+  review if skipped.
+- **Performance:** post-FX is a full-screen cost every frame. Recheck 60fps on
+  aerial (worst outdoor) and vault. If regressing: drop vault bloom first, or
+  lower `dpr` ceiling only while composer is active — report as a bug, don’t
+  silently accept 30fps.
+- **Out of scope:** DOF, chromatic aberration, vignette-as-style, film grain.
+  Comfort vignette for VR remains build-order step 9 (XR), not this phase.
+- Review-gate commits: (1) add dependency + `ScenePostFx` wired in Canvas,
+  (2) zone-tuned bloom thresholds + docs table / checklist.
+
+### Review checklist for this phase specifically
+- [ ] Bloom visible on bright highlights (receiver, clearcoat glints, vault
+      emissives) without milky full-frame glow
+- [ ] SMAA reduces shimmering on thin rails / panel edges vs no post-FX
+- [ ] ACES exposure from Phase 1 remains 1.25 unless a documented retune is
+      required and written back here
+- [ ] Composer lives inside the existing R3F `<Canvas>` — no second renderer
+- [ ] Frame rate rechecked at 60fps desktop on aerial + vault; regressions
+      flagged as bugs (AGENTS.md rule 5)
+
+---
