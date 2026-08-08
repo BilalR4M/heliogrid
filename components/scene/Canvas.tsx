@@ -10,6 +10,7 @@ import ArrayRingAlpha from "@/components/scene/zones/ArrayRingAlpha";
 import HelioSpireTower from "@/components/scene/zones/HelioSpireTower";
 import SubterraneanVault from "@/components/scene/zones/SubterraneanVault";
 import Lighting from "@/components/scene/Lighting";
+import ScenePostFx from "@/components/scene/ScenePostFx";
 import Sky from "@/components/scene/Sky";
 import SpatialAudioRig from "@/components/scene/SpatialAudioRig";
 import Terrain from "@/components/scene/Terrain";
@@ -174,6 +175,7 @@ export default function ExperienceCanvas() {
       >
         <ZoneView />
         <SpatialAudioRig />
+        <ScenePostFx />
         <OrbitControls
           makeDefault
           enablePan={false}
