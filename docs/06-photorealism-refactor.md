@@ -457,10 +457,115 @@ Document the texture size (e.g. 256², 6×10 cell grid) in the tuned-values tabl
 
 ---
 
-## Phases 4–5 — not yet specified in detail
+## Phase 4 — Subterranean Vault Realism
 
-Objectives remain under "Core technical objectives" above (vault realism,
-post-processing). Write each phase’s detailed implementation section the same
-way Phases 1–3 are written — code + "Integration notes specific to this
-codebase" + a review checklist — and append it here before starting that
+### Objective
+Turn Zone 04 from a near-black box hall (`ambient 0.12` + two point lights) into
+a readable **industrial LFP cooling vault**: layered LED work lights, glowing
+charge/discharge conduits, emissive rack status strips, and vault-specific PBR
+materials — without breaking the elevator descent, particle energy-flow shader,
+or `getVaultFlow(timeOfDay)` charge/discharge behavior.
+
+### Implementation
+
+```javascript
+import * as THREE from 'three';
+
+/** Vault interior light rig — local to SubterraneanVault (not outdoor Lighting.tsx). */
+export function VaultLighting({ mode /* charge | discharge | idle */ }) {
+  // Cool cyan work LEDs along the hall; amber accent when discharging
+  const primary = mode === 'discharge' ? 0xe0a53a : 0x4ec9e8;
+  return (
+    <>
+      <ambientLight intensity={0.22} color={0x1a2430} />
+      <hemisphereLight args={[0x2a3a4a, 0x0a0c10, 0.35]} />
+      {/* Ceiling LED strip proxies — several point/spot lights, not one fill */}
+      <pointLight position={[-6, -14.5, -2]} intensity={1.1} distance={18} color={primary} />
+      <pointLight position={[6, -14.5, -2]} intensity={1.1} distance={18} color={primary} />
+      <pointLight position={[0, -14.5, 6]} intensity={0.7} distance={16} color={0xb0c4d8} />
+      {/* Shaft downlight */}
+      <spotLight
+        position={[0, -2, 0]}
+        angle={0.45}
+        penumbra={0.5}
+        intensity={1.4}
+        distance={28}
+        color={0x9eb6c8}
+        castShadow={false} // keep shadow budget for racks only if needed
+      />
+    </>
+  );
+}
+
+/** Instanced LFP racks with status emissive driven by vault flow mode. */
+export function createVaultRackMaterial(mode) {
+  return new THREE.MeshStandardMaterial({
+    color: 0x1a2332,
+    roughness: 0.42,
+    metalness: 0.55,
+    emissive: mode === 'discharge' ? 0x2a1a08 : 0x0a2a30,
+    emissiveIntensity: mode === 'idle' ? 0.15 : 0.55,
+  });
+}
+```
+
+**Geometry / set-dressing (procedural, no new GLB required):**
+
+1. **Racks** — keep the 5×6 layout; convert to a single `InstancedMesh` (30
+   instances) instead of 30 React `<mesh>` nodes. Optional thin front “status
+   strip” as a second instanced box with stronger emissive.
+2. **Conduits** — thin cylinder/torus runs along the ceiling or between racks;
+   emissive cyan/amber matching particle charge/discharge colors so streams
+   feel grounded in hardware.
+3. **Floor / shaft / bus** — retune via vault PBR presets (dark coated steel,
+   matte epoxy floor); slightly raise metalness on bus bar for specular from LEDs.
+4. **Fog / background** — keep the enclosed feel (`#05070a`) but lift fog far
+   plane / density so LED falloff reads before everything crushes to black.
+
+### Integration notes (specific to this codebase, not generic)
+
+- **Zone-local lights only.** Outdoor `Sky.tsx` / `Lighting.tsx` already unmount
+  when `currentZone === "subterranean-vault"` (`Canvas.tsx` `outdoor` flag). Do
+  **not** wire vault LEDs into the outdoor sun path. Clear `scene.environment` /
+  PMREM when entering the vault if any bleed remains (Sky cleanup should already
+  null these on unmount — verify, don’t double-own).
+- **Drive accents from `getVaultFlow(timeOfDay)`** — same source as
+  `EnergyParticleStreams` and `VaultReadout`. Charge → cyan LEDs/emissives;
+  discharge → amber; idle → dim. One mode value, three consumers.
+- **Particles stay.** Do not replace or remove `energyParticles.glsl.ts`; Phase 4
+  adds hardware context around them. Tune particle brightness only if LEDs make
+  them wash out.
+- **Materials:** extend `facilityPbr.ts` with vault presets (`vaultFloor`,
+  `vaultShaft`, `vaultRack`, `vaultConduit`) rather than scattering hexes in
+  `SubterraneanVault.tsx`. Outdoor presets stay untouched.
+- **Elevator + a11y:** `ElevatorRide` and `prefers-reduced-motion` behavior must
+  remain. Don’t add motion that fights the descent or ignores reduced-motion.
+- **Performance:** prefer instanced racks; cap vault point/spot lights (target
+  ≤6). No shadow maps on every LED — at most one key light if shadows are kept.
+  Recheck 60fps; vault should be cheaper than outdoor clearcoat scenes.
+- **Post-processing is Phase 5** — no `EffectComposer` / bloom here even though
+  emissives would “look better” with bloom. Earn the glow with materials + lights
+  first; Phase 5 can amplify.
+- Review-gate commits: (1) vault PBR presets + instanced racks, (2) LED/conduit
+  light rig tied to flow mode, (3) docs tuned values / checklist.
+
+### Review checklist for this phase specifically
+- [ ] Vault is readable at all `timeOfDay` values — no pitch-black void; racks
+      and floor form is visible without crushing blacks
+- [ ] LED / emissive accents follow charge (cyan) vs discharge (amber) vs idle
+      from `getVaultFlow`, consistent with particle stream direction
+- [ ] Racks are instanced; materials come from shared vault presets
+- [ ] Elevator descent + reduced-motion path still work
+- [ ] Energy particle streams still reverse/density-modulate with flow mode
+- [ ] Frame rate rechecked at 60fps desktop; light-count regressions flagged as
+      bugs (AGENTS.md rule 5)
+
+---
+
+## Phase 5 — not yet specified in detail
+
+Objective remains under "Core technical objectives" (post-processing:
+`EffectComposer`, bloom, SMAA). Write Phase 5’s detailed implementation section
+the same way Phases 1–4 are written — code + "Integration notes specific to
+this codebase" + a review checklist — and append it here before starting that
 phase’s implementation.
