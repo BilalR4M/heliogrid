@@ -7,6 +7,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import AerialOverlook from "@/components/scene/zones/AerialOverlook";
 import ArrayRingAlpha from "@/components/scene/zones/ArrayRingAlpha";
 import HelioSpireTower from "@/components/scene/zones/HelioSpireTower";
+import SubterraneanVault from "@/components/scene/zones/SubterraneanVault";
 import Lighting from "@/components/scene/Lighting";
 import Sky from "@/components/scene/Sky";
 import Terrain from "@/components/scene/Terrain";
@@ -27,7 +28,7 @@ type CameraConfig = {
 };
 
 const ZONE_CAMERAS: Record<
-  "aerial-overlook" | "array-ring-alpha" | "heliospire-tower",
+  Exclude<ZoneId, never>,
   CameraConfig
 > = {
   "aerial-overlook": {
@@ -63,19 +64,32 @@ const ZONE_CAMERAS: Record<
     near: 0.1,
     far: 400,
   },
+  "subterranean-vault": {
+    position: [7, -15.8, 11],
+    target: [0, -18, 0],
+    minDistance: 4,
+    maxDistance: 22,
+    minPolar: 0.2,
+    maxPolar: Math.PI / 2.1,
+    autoRotate: false,
+    near: 0.1,
+    far: 120,
+  },
 };
 
 function resolveCamera(zone: ZoneId): CameraConfig {
-  if (zone === "array-ring-alpha") return ZONE_CAMERAS["array-ring-alpha"];
-  if (zone === "heliospire-tower") return ZONE_CAMERAS["heliospire-tower"];
-  return ZONE_CAMERAS["aerial-overlook"];
+  return ZONE_CAMERAS[zone];
 }
 
 function ZoneView() {
   const currentZone = useSceneStore((s) => s.currentZone);
+  const elevatorActive = useSceneStore((s) => s.elevatorActive);
   const { camera, controls } = useThree();
 
   useEffect(() => {
+    // Elevator rig owns the camera while descending into the vault.
+    if (currentZone === "subterranean-vault" && elevatorActive) return;
+
     const orbit = controls as OrbitControlsImpl | null;
     const config = resolveCamera(currentZone);
 
@@ -95,21 +109,26 @@ function ZoneView() {
       orbit.minPolarAngle = config.minPolar;
       orbit.maxPolarAngle = config.maxPolar;
       orbit.autoRotate = config.autoRotate;
+      orbit.enabled = true;
       orbit.update();
     } else {
       camera.lookAt(config.target[0], config.target[1], config.target[2]);
     }
-  }, [camera, controls, currentZone]);
+  }, [camera, controls, currentZone, elevatorActive]);
 
   const showField =
     currentZone === "aerial-overlook" || currentZone === "heliospire-tower";
+  const outdoor = currentZone !== "subterranean-vault";
 
   return (
     <>
-      <Terrain />
+      {outdoor && <Sky />}
+      {outdoor && <Lighting />}
+      {outdoor && <Terrain />}
       {showField && <AerialOverlook />}
       {currentZone === "array-ring-alpha" && <ArrayRingAlpha />}
       {currentZone === "heliospire-tower" && <HelioSpireTower />}
+      {currentZone === "subterranean-vault" && <SubterraneanVault />}
     </>
   );
 }
@@ -121,17 +140,21 @@ function zoneHint(zone: ZoneId) {
   if (zone === "heliospire-tower") {
     return "HelioSpire Tower — observation deck with converging light vectors";
   }
+  if (zone === "subterranean-vault") {
+    return "Subterranean Vault — elevator descent and battery energy flow";
+  }
   return "Aerial Overlook — drag to orbit";
 }
 
 /**
- * Experience canvas — zones 01–03.
+ * Experience canvas — all four facility zones.
  */
 export default function ExperienceCanvas() {
   const currentZone = useSceneStore((s) => s.currentZone);
+  const isVault = currentZone === "subterranean-vault";
 
   return (
-    <div className="h-dvh w-full bg-scene-sky">
+    <div className={`h-dvh w-full ${isVault ? "bg-[#05070a]" : "bg-scene-sky"}`}>
       <Canvas
         camera={{
           position: [...ZONE_CAMERAS["aerial-overlook"].position],
@@ -143,8 +166,6 @@ export default function ExperienceCanvas() {
         gl={{ antialias: true }}
         shadows
       >
-        <Sky />
-        <Lighting />
         <ZoneView />
         <OrbitControls
           makeDefault
@@ -153,7 +174,7 @@ export default function ExperienceCanvas() {
           dampingFactor={0.06}
           autoRotateSpeed={0.35}
         />
-        <color attach="background" args={[SCENE_COLORS.sky]} />
+        {!isVault && <color attach="background" args={[SCENE_COLORS.sky]} />}
       </Canvas>
       <span className="sr-only">{zoneHint(currentZone)}</span>
     </div>
