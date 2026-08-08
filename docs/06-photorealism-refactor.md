@@ -195,11 +195,138 @@ export function setupRendererAndLighting(scene, canvas) {
 
 ---
 
-## Phases 2–5 — not yet specified in detail
+## Phase 2 — PBR Material Overhaul
 
-Objectives are listed under "Core technical objectives" above. Write each
-phase's detailed implementation doc the same way Phase 1 is written — code +
+### Objective
+Upgrade outdoor facility surfaces from flat/under-tuned `MeshStandardMaterial`
+(and the unlit-leaning Array Ring thermal `ShaderMaterial`) to physically based
+materials that respond to Phase 1’s PMREM environment and directional sun —
+bifacial-glass clearcoat on panels, galvanized steel on mounts/spire, and
+volcanic caldera rock on terrain — per design doc §1.
+
+### Implementation
+
+```javascript
+import * as THREE from 'three';
+
+/** Shared facility PBR presets — single source for outdoor zones. */
+export const PBR = {
+  panelGlass: {
+    color: 0x1a2332,
+    roughness: 0.18,
+    metalness: 0.55,
+    // MeshPhysicalMaterial clearcoat ≈ bifacial front glass
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.08,
+    envMapIntensity: 1.15,
+  },
+  galvanizedSteel: {
+    color: 0x8a9199,
+    roughness: 0.38,
+    metalness: 0.88,
+    envMapIntensity: 1.0,
+  },
+  calderaRock: {
+    color: 0x8b5a3c,
+    roughness: 0.92,
+    metalness: 0.04,
+    envMapIntensity: 0.55,
+  },
+  receiverCore: {
+    color: 0xfff1d6,
+    emissive: 0xe0a53a,
+    emissiveIntensity: 1.4,
+    roughness: 0.22,
+    metalness: 0.35,
+  },
+};
+
+export function createPanelMaterial() {
+  return new THREE.MeshPhysicalMaterial({ ...PBR.panelGlass });
+}
+
+export function createSteelMaterial() {
+  return new THREE.MeshStandardMaterial({ ...PBR.galvanizedSteel });
+}
+
+export function createRockMaterial(overrides = {}) {
+  return new THREE.MeshStandardMaterial({ ...PBR.calderaRock, ...overrides });
+}
+
+/**
+ * Optional: lightweight procedural normal for rock (no HDRI/texture download).
+ * Canvas/DataTexture, shared, dispose with the material helper.
+ */
+export function createRockNormalMap(size = 128) {
+  // low-frequency noise → bump-like normals; keep tiny for mobile budget
+}
+```
+
+Array Ring Alpha panels today use a custom thermal `ShaderMaterial` that does
+**not** sample `scene.environment`. Phase 2 must not drop the thermal toggle.
+Preferred approach: rebuild the panel fragment as a **MeshPhysical-compatible
+path** — either:
+
+1. `MeshPhysicalMaterial` + `onBeforeCompile` injecting thermal/select mixes, or
+2. Keep a dual-mode material: Physical when thermal is off; upgraded shader when
+   on that still samples lights/env approximately.
+
+Do **not** leave thermal-mode panels as the current flat Lambert-ish shade while
+day mode gets clearcoat — the scrub would expose a material discontinuity.
+
+### Integration notes (specific to this codebase, not generic)
+
+- **Scope — outdoor only.** Terrain, Aerial Overlook LOD blocks + aerial spire
+  stand-in, Array Ring Alpha panels/posts/pad, HelioSpire deck/rail/receiver.
+  **Subterranean Vault meshes stay for Phase 4** (industrial interior lighting
+  + materials together). Do not “finish” vault PBR in this phase.
+- **Landing hologram stays dual-mode.** `PlaceholderCaldera.tsx` wireframe
+  `meshBasicMaterial` layers are intentional terminal aesthetics — do not
+  convert them to Physical. Photoreal blend layers already use Standard; retune
+  those to the shared `PBR` presets only if it keeps the morph coherent.
+- **Centralize presets** in something like `components/scene/materials/facilityPbr.ts`
+  (or `lib/materials.ts`) and consume from zone files — don’t scatter magic
+  roughness/metalness numbers again. Reuse `SCENE_COLORS` hexes where they
+  already match design tokens (`panel`, `steel`, `rock`).
+- **Normal maps:** prefer one shared procedural rock normal (small DataTexture)
+  over shipping new `public/` assets in this phase unless an asset is already
+  approved. Panel micro-gridlines are **Phase 3** (detailed array instancing),
+  not Phase 2 — Phase 2 is material response, not new panel geometry.
+- **Env response:** Phase 1 already sets `scene.environment` outdoors. Physical/
+  Standard materials should leave `envMap` unset so they pick it up automatically;
+  tune `envMapIntensity` per preset (rock lower, glass higher).
+- **Thermal shader** (`components/scene/shaders/thermalHeatmap.glsl.ts`) must be
+  updated in the same phase as Array Ring panel materials — treating it as
+  “out of scope” would leave zone 02 looking pre-Phase-1 when IR is on.
+- **Performance:** clearcoat on ~276 aerial + ~96 array instances is acceptable
+  if we do **not** add per-instance unique materials. One shared panel material
+  per zone. Recheck 60fps after clearcoat lands; if Array Ring regresses, drop
+  clearcoat on aerial LOD blocks first (distance hides glass) and keep it on
+  human-scale Array Ring only.
+- Follow the same review-gate loop as Phase 1 — smallest coherent commits
+  (shared presets → terrain/spire steel/rock → panels+thermal), not one giant
+  material dump.
+
+### Review checklist for this phase specifically
+- [ ] Outdoor meshes respond visibly to PMREM + sun (specular on steel/glass,
+      soft bounce on rock) — no remaining flat unlit look outdoors
+- [ ] Bifacial panels use clearcoat (`MeshPhysicalMaterial` or equivalent) at
+      Array Ring Alpha human scale
+- [ ] Thermal heatmap toggle still works and does not fall back to a flat
+      unlit shader while Physical day materials look correct
+- [ ] Vault interior deliberately unchanged (Phase 4) — called out, not silently
+      “half upgraded”
+- [ ] Shared PBR presets live in one module; zone files don’t reintroduce
+      one-off roughness/metalness literals for the same surface types
+- [ ] Frame rate rechecked against 60fps desktop target after clearcoat; any
+      regression flagged as a bug (AGENTS.md rule 5), not a note in passing
+
+---
+
+## Phases 3–5 — not yet specified in detail
+
+Objectives remain under "Core technical objectives" above (detailed array
+instancing, vault realism, post-processing). Write each phase’s detailed
+implementation section the same way Phases 1–2 are written — code +
 "Integration notes specific to this codebase" + a review checklist — and
-append it here before starting that phase's implementation, so this doc stays
-the single source of truth for the refactor the way `00-project-lore.md` is
-for content.
+append it here before starting that phase’s implementation.
