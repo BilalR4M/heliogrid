@@ -564,10 +564,10 @@ export function createVaultRackMaterial(mode) {
 
 | Piece | Approach | Notes |
 |---|---|---|
-| Lights | ambient 0.22 + hemi 0.35 + 3 points + 1 shaft spot | Accent color from flow mode; ≤6 lights |
-| Racks | Instanced 5×6 boxes + status strips | `createVaultRackMaterial` / status strip |
+| Lights | ambient 0.45 + hemi 0.55 + 3 points (55–85 cd) + spot 120 cd | Candela units (Three r155+); accent from flow mode |
+| Racks | Instanced 5×6 boxes + status strips | Lighter `#243040` body; lower rack emissive so LEDs read |
 | Conduits | Ceiling + vertical runs, emissive | Cyan charge / amber discharge / dim idle |
-| Floor / shaft / bus | Vault PBR presets | Fog `#080b10` near 12 far 48 |
+| Floor / shaft / bus | Vault PBR presets | Floor `#1e2836`, bg/fog `#0b1018` / `#0f1620` |
 | Particles | Unchanged shader | Still driven by `getVaultFlow` |
 
 ---
