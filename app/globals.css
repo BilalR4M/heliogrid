@@ -1,6 +1,30 @@
 @import "tailwindcss";
 
+/* Terminal register — locked for landing / HUD (design doc §1).
+   Photoreal scene register arrives with zone work later. */
+:root {
+  --terminal-bg: #07090c;
+  --terminal-surface: #0c1016;
+  --terminal-text: #d0d4da;
+  --terminal-muted: #5a6570;
+  --hologram-cyan: #4ec9e8;
+  --hud-amber: #e0a53a;
+  --hud-green: #8fbf7f;
+}
+
+@theme inline {
+  --color-terminal-bg: var(--terminal-bg);
+  --color-terminal-surface: var(--terminal-surface);
+  --color-terminal-text: var(--terminal-text);
+  --color-terminal-muted: var(--terminal-muted);
+  --color-hologram-cyan: var(--hologram-cyan);
+  --color-hud-amber: var(--hud-amber);
+  --color-hud-green: var(--hud-green);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-hud);
+}
+
 body {
-  background: #0a0a0a;
-  color: #ededed;
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
 }
