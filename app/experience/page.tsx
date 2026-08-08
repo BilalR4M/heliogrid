@@ -2,11 +2,13 @@
 
 import dynamic from "next/dynamic";
 import ZoneSummary from "@/components/content/ZoneSummary";
+import ZoneTransitionManager from "@/components/scene/ZoneTransitionManager";
 import DigitalTwinCard from "@/components/ui/HUD/DigitalTwinCard";
 import LightVectorToggle from "@/components/ui/HUD/LightVectorToggle";
 import PowerOutputReadout from "@/components/ui/HUD/PowerOutputReadout";
 import SpireDeckReadout from "@/components/ui/HUD/SpireDeckReadout";
 import ThermalToggle from "@/components/ui/HUD/ThermalToggle";
+import TimeScrub from "@/components/ui/HUD/TimeScrub";
 import VaultReadout from "@/components/ui/HUD/VaultReadout";
 import ZoneNav from "@/components/ui/ZoneNav";
 import { useSceneStore } from "@/lib/scene-state";
@@ -38,7 +40,9 @@ export default function ExperiencePage() {
       <DigitalTwinCard />
       <ThermalToggle />
       <LightVectorToggle />
+      <TimeScrub />
       <ZoneNav />
+      <ZoneTransitionManager />
       <ZoneSummary zoneId={currentZone} />
       {showVignette && (
         <div
