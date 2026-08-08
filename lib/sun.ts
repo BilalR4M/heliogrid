@@ -1,10 +1,14 @@
 import { getPosition } from "suncalc";
 
-const CALDERA_LAT = -23.5;
-const CALDERA_LON = -67.9;
+/** Approximate Helios Caldera coordinates (high-altitude fictional basin). */
+export const CALDERA_LAT = -23.5;
+export const CALDERA_LON = -67.9;
+
+/** Longitude → hours offset so timeOfDay reads as local solar time. */
+const LOCAL_SOLAR_OFFSET_H = -CALDERA_LON / 15;
 
 export type SunDirection = {
-  /** Unit-ish direction vector toward the sun (Three.js Y-up). */
+  /** Unit-ish direction vector toward the sun (Three.js Y-up, −Z north). */
   x: number;
   y: number;
   z: number;
@@ -12,25 +16,33 @@ export type SunDirection = {
   intensity: number;
 };
 
-function hoursToDate(timeOfDay: number): Date {
-  const date = new Date();
-  const hours = Math.floor(timeOfDay);
-  const minutes = Math.round((timeOfDay - hours) * 60);
+/**
+ * Map facility time-of-day (local solar hours in [0, 24)) to a UTC Date
+ * for suncalc at the caldera longitude.
+ */
+export function hoursToDate(timeOfDay: number, base = new Date()): Date {
+  const date = new Date(base);
+  const local = ((timeOfDay % 24) + 24) % 24;
+  const utc = local + LOCAL_SOLAR_OFFSET_H;
+  const hours = Math.floor(utc);
+  const minutes = Math.round((utc - hours) * 60);
   date.setUTCHours(hours, minutes, 0, 0);
   return date;
 }
 
-/** Map suncalc altitude/azimuth into a Three.js directional light vector. */
+/** Map suncalc altitude/azimuth (degrees) into a Three.js directional light vector. */
 export function getSunDirection(timeOfDay: number): SunDirection {
   const position = getPosition(
     hoursToDate(timeOfDay),
     CALDERA_LAT,
     CALDERA_LON,
   );
-  const elevation = position.altitude;
-  const azimuth = position.azimuth;
+  // suncalc@2 returns degrees: altitude; north-based clockwise azimuth (0 = N).
+  const elevationDeg = position.altitude;
+  const azimuthDeg = position.azimuth;
+  const elevation = (elevationDeg * Math.PI) / 180;
+  const azimuth = (azimuthDeg * Math.PI) / 180;
 
-  // suncalc: azimuth from south; convert to Three XZ with Y up.
   const x = Math.sin(azimuth) * Math.cos(elevation);
   const y = Math.sin(elevation);
   const z = -Math.cos(azimuth) * Math.cos(elevation);
@@ -40,7 +52,7 @@ export function getSunDirection(timeOfDay: number): SunDirection {
     x,
     y: Math.max(0.05, y),
     z,
-    elevationDeg: (elevation * 180) / Math.PI,
+    elevationDeg,
     intensity,
   };
 }
