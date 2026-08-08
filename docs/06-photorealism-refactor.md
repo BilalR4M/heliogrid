@@ -334,10 +334,123 @@ day mode gets clearcoat — the scrub would expose a material discontinuity.
 
 ---
 
-## Phases 3–5 — not yet specified in detail
+## Phase 3 — Detailed Array Instancing (Array Ring Alpha)
 
-Objectives remain under "Core technical objectives" above (detailed array
-instancing, vault realism, post-processing). Write each phase’s detailed
-implementation section the same way Phases 1–2 are written — code +
-"Integration notes specific to this codebase" + a review checklist — and
-append it here before starting that phase’s implementation.
+### Objective
+Replace Array Ring Alpha’s flat `BoxGeometry` panel quads and sparse hand-placed
+posts with **high-fidelity dual-axis tracking modules** — aluminum frame,
+monocrystalline cell gridlines, bifacial glass laminate, and steel mounting
+posts — still via `InstancedMesh`, holding the 60fps target. Aerial Overlook
+LOD blocks stay low-detail (Phase 3 is human-scale only).
+
+### Implementation
+
+```javascript
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/**
+ * Build one tracking-module prototype (local space, origin at post top / hinge).
+ * Prefer merging glass + frame (+ optional thin grid bars) into ONE geometry so
+ * a single InstancedMesh carries the module. Posts can be a second InstancedMesh
+ * sharing the same instance matrices (or merged if pivot allows).
+ */
+export function createTrackingModuleGeometry() {
+  const glass = new THREE.BoxGeometry(2.1, 1.05, 0.04);
+  glass.translate(0, 0.55, 0); // hinge at bottom edge of laminate
+
+  // Aluminum frame as a slightly larger shallow box / four thin rails
+  const frame = new THREE.BoxGeometry(2.18, 1.13, 0.06);
+  frame.translate(0, 0.55, 0);
+
+  // Optional: bake cell grid as a CanvasTexture on the glass material instead
+  // of extra geometry — cheaper and reads as monocrystalline gridlines.
+
+  // mergeGeometries needs compatible attributes; use groups + multi-material
+  // OR keep two InstancedMeshes (glass, frame) with identical instanceMatrix.
+  return { glass, frame };
+}
+
+export function createPostGeometry() {
+  const post = new THREE.CylinderGeometry(0.055, 0.07, 1.15, 6);
+  post.translate(0, 0.575, 0);
+  return post;
+}
+
+/**
+ * Dual-axis pose from existing sun helpers — stepped, not smooth (design §3).
+ * elevation → tilt; azimuth → yaw about vertical (relative to radial facing).
+ */
+export function moduleOrientation(sunElevationDeg, sunAzimuthDeg, radialYaw) {
+  const stepElev = Math.round(Math.max(0, sunElevationDeg) / 5) * 5;
+  const tilt = THREE.MathUtils.degToRad(Math.min(55, stepElev) * 0.7);
+  const stepAz = Math.round(sunAzimuthDeg / 5) * 5;
+  // Compose: face outward along ring, then apply stepped azimuth offset + tilt
+  return { tilt, yaw: radialYaw /* + small azimuth delta if desired */ };
+}
+```
+
+**Recommended draw setup for this codebase (96 modules):**
+
+1. **Glass** `InstancedMesh` — `createArrayPanelMaterial()` (Phase 2 clearcoat +
+   thermal `aTemp` / `aSelect` attrs). Click picking stays on this mesh.
+2. **Frame** `InstancedMesh` — `createSteelMaterial()` or a lighter aluminum
+   preset (`roughness ~0.32`, `metalness ~0.75`, color near `#b0b6bc`).
+3. **Posts** `InstancedMesh` — replace the current 32 individual `<mesh>` posts
+   with one instanced set aligned under each module.
+4. Share one `instanceMatrix` write loop (dummy Object3D) across all three so
+   dual-axis tracking stays locked.
+
+Cell **gridlines**: prefer a small shared `CanvasTexture` / `DataTexture` on the
+glass material (`map` or `roughnessMap` modulation) over dozens of bar meshes.
+Document the texture size (e.g. 256², 6×10 cell grid) in the tuned-values table.
+
+### Integration notes (specific to this codebase, not generic)
+
+- **Zone scope = Array Ring Alpha only.** Do not rebuild Aerial Overlook rings
+  into high-fidelity modules — those remain LOD density blocks per the tech
+  stack’s “3.2 million panels” rule. Optionally retune aerial block aspect to
+  vaguely match module proportions; not required for Phase 3 done.
+- **Keep interaction contracts:** `ARRAY_PANEL_COUNT` (96), click →
+  `selectedPanelId`, thermal attrs, Digital Twin HUD. Changing instance count
+  or pick mesh without updating `getPanelTwin` / HUD is a bug.
+- **Tracking motion:** today only elevation tilt is applied
+  (`ArrayRingAlpha.tsx`). Phase 3 should make the dual-axis claim real:
+  stepped tilt **and** a visible second axis (yaw or roll relative to the ring
+  radial). Keep the 5° quantization from design doc §3 (“slightly stepped…
+  not a continuous glide”).
+- **Materials:** reuse `facilityPbr.ts`. Add an `aluminumFrame` preset there
+  rather than one-off literals in the zone file. Glass keeps Phase 2 Physical +
+  thermal compile path; if a grid `map` is added, ensure thermal mix still
+  looks correct when IR is on (map can dim or be ignored under `uThermal`).
+- **Geometry source:** procedural Three.js primitives + merge/groups — **no new
+  `.glb` requirement** in this phase unless an asset is explicitly approved.
+  Keep vertex counts modest (frame as 4–8 boxes max, or one shell + texture).
+- **Shadows:** glass + frame + posts should `castShadow` / `receiveShadow` as
+  appropriate; watch shadow-map cost with ~288 shadow casters (3×96). If FPS
+  regresses, disable shadows on frames first, keep posts + glass.
+- **Posts cleanup:** delete the sparse `ROW_RADIUS.map(… Array.from(length: 8))`
+  individual meshes once instanced posts land — don’t leave both.
+- Review-gate commits: (1) module geometry + aluminum preset + grid texture,
+  (2) wire triple InstancedMesh + dual-axis matrix loop, (3) docs tuned values /
+  checklist — not one giant zone rewrite without review.
+
+### Review checklist for this phase specifically
+- [ ] Array Ring modules read as framed bifacial panels with cell gridlines at
+      human scale — not flat unmarked boxes
+- [ ] Aluminum frames + steel posts are instanced (no per-post React mesh list)
+- [ ] Dual-axis tracking responds to `timeOfDay` with stepped motion on both axes
+- [ ] Click-select + thermal heatmap still work on the glass instances
+- [ ] Aerial Overlook remains LOD blocks (not high-fidelity modules)
+- [ ] Frame rate rechecked at 60fps desktop after the extra instances/shadows;
+      regressions flagged as bugs (AGENTS.md rule 5)
+
+---
+
+## Phases 4–5 — not yet specified in detail
+
+Objectives remain under "Core technical objectives" above (vault realism,
+post-processing). Write each phase’s detailed implementation section the same
+way Phases 1–3 are written — code + "Integration notes specific to this
+codebase" + a review checklist — and append it here before starting that
+phase’s implementation.
