@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Terminal register — locked for landing / HUD (design doc §1).
-   Photoreal scene register arrives with zone work later. */
+   Scene register — placeholder photoreal (high-altitude caldera). */
 :root {
   --terminal-bg: #07090c;
   --terminal-surface: #0c1016;
@@ -10,6 +10,12 @@
   --hologram-cyan: #4ec9e8;
   --hud-amber: #e0a53a;
   --hud-green: #8fbf7f;
+
+  --scene-sky: #0c1824;
+  --scene-rock: #8b5a3c;
+  --scene-panel: #1a2332;
+  --scene-steel: #8a9199;
+  --scene-sun: #fff1d6;
 }
 
 @theme inline {
@@ -20,6 +26,11 @@
   --color-hologram-cyan: var(--hologram-cyan);
   --color-hud-amber: var(--hud-amber);
   --color-hud-green: var(--hud-green);
+  --color-scene-sky: var(--scene-sky);
+  --color-scene-rock: var(--scene-rock);
+  --color-scene-panel: var(--scene-panel);
+  --color-scene-steel: var(--scene-steel);
+  --color-scene-sun: var(--scene-sun);
   --font-sans: var(--font-display);
   --font-mono: var(--font-hud);
 }
