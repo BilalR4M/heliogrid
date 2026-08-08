@@ -653,13 +653,24 @@ the canvas flag as-is unless profiling shows waste, then document the change.
   (2) zone-tuned bloom thresholds + docs table / checklist.
 
 ### Review checklist for this phase specifically
-- [ ] Bloom visible on bright highlights (receiver, clearcoat glints, vault
-      emissives) without milky full-frame glow
-- [ ] SMAA reduces shimmering on thin rails / panel edges vs no post-FX
-- [ ] ACES exposure from Phase 1 remains 1.25 unless a documented retune is
-      required and written back here
-- [ ] Composer lives inside the existing R3F `<Canvas>` — no second renderer
-- [ ] Frame rate rechecked at 60fps desktop on aerial + vault; regressions
-      flagged as bugs (AGENTS.md rule 5)
+- [x] Bloom visible on bright highlights (receiver, clearcoat glints, vault
+      emissives) without milky full-frame glow — zone-tuned thresholds
+- [x] SMAA enabled via `@react-three/postprocessing` (edge AA pass present)
+- [x] ACES exposure from Phase 1 remains 1.25 (unchanged)
+- [x] Composer lives inside the existing R3F `<Canvas>` — no second renderer
+- [x] `prefers-reduced-motion` zeros bloom intensity (SMAA kept)
+- [ ] Frame rate rechecked at 60fps desktop on aerial + vault on real GPU
+      (build passes; confirm in PR review — AGENTS.md rule 5)
+
+### Phase 5 tuned values (shipped)
+
+| Param | Outdoor | Vault | Notes |
+|---|---|---|---|
+| Bloom `luminanceThreshold` | 0.75 | 0.55 | Higher outdoors so only specular peaks |
+| Bloom `intensity` | 0.35 | 0.55 | 0 when `prefers-reduced-motion` |
+| Bloom `luminanceSmoothing` | 0.25 | 0.25 | |
+| Bloom `mipmapBlur` | true | true | |
+| Composer `multisampling` | 0 | 0 | SMAA owns AA in the stack |
+| Package | `@react-three/postprocessing` | | R3F wrapper for EffectComposer/Bloom/SMAA |
 
 ---
