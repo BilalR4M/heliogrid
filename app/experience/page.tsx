@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 import ZoneSummary from "@/components/content/ZoneSummary";
 import DigitalTwinCard from "@/components/ui/HUD/DigitalTwinCard";
+import LightVectorToggle from "@/components/ui/HUD/LightVectorToggle";
 import PowerOutputReadout from "@/components/ui/HUD/PowerOutputReadout";
+import SpireDeckReadout from "@/components/ui/HUD/SpireDeckReadout";
 import ThermalToggle from "@/components/ui/HUD/ThermalToggle";
 import ZoneNav from "@/components/ui/ZoneNav";
 import { useSceneStore } from "@/lib/scene-state";
@@ -24,8 +26,10 @@ export default function ExperiencePage() {
     <div className="relative h-dvh w-full overflow-hidden bg-scene-sky">
       <ExperienceCanvas />
       <PowerOutputReadout />
+      <SpireDeckReadout />
       <DigitalTwinCard />
       <ThermalToggle />
+      <LightVectorToggle />
       <ZoneNav />
       <ZoneSummary zoneId={currentZone} />
     </div>
