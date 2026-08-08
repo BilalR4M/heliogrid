@@ -11,6 +11,7 @@ Read in this order:
 4. `docs/03-tech-stack.md` — what to build with and why
 5. `docs/04-architecture.md` — folder structure and conventions once code exists
 6. `docs/05-git-workflow.md` — how you commit, branch, and request review
+7. `docs/06-photorealism-refactor.md` — visual-fidelity refactor after the core zones exist (step 12)
 
 Do not skip the docs and start scaffolding. `00-project-lore.md` in particular is the
 canonical content reference — every HUD number, zone name, and interaction described
