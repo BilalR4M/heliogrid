@@ -550,15 +550,25 @@ export function createVaultRackMaterial(mode) {
   light rig tied to flow mode, (3) docs tuned values / checklist.
 
 ### Review checklist for this phase specifically
-- [ ] Vault is readable at all `timeOfDay` values — no pitch-black void; racks
+- [x] Vault is readable at all `timeOfDay` values — no pitch-black void; racks
       and floor form is visible without crushing blacks
-- [ ] LED / emissive accents follow charge (cyan) vs discharge (amber) vs idle
+- [x] LED / emissive accents follow charge (cyan) vs discharge (amber) vs idle
       from `getVaultFlow`, consistent with particle stream direction
-- [ ] Racks are instanced; materials come from shared vault presets
-- [ ] Elevator descent + reduced-motion path still work
-- [ ] Energy particle streams still reverse/density-modulate with flow mode
-- [ ] Frame rate rechecked at 60fps desktop; light-count regressions flagged as
-      bugs (AGENTS.md rule 5)
+- [x] Racks are instanced; materials come from shared vault presets
+- [x] Elevator descent + reduced-motion path still work
+- [x] Energy particle streams still reverse/density-modulate with flow mode
+- [ ] Frame rate rechecked at 60fps desktop on real GPU (build passes; confirm
+      in PR review — AGENTS.md rule 5)
+
+### Phase 4 tuned values (shipped)
+
+| Piece | Approach | Notes |
+|---|---|---|
+| Lights | ambient 0.22 + hemi 0.35 + 3 points + 1 shaft spot | Accent color from flow mode; ≤6 lights |
+| Racks | Instanced 5×6 boxes + status strips | `createVaultRackMaterial` / status strip |
+| Conduits | Ceiling + vertical runs, emissive | Cyan charge / amber discharge / dim idle |
+| Floor / shaft / bus | Vault PBR presets | Fog `#080b10` near 12 far 48 |
+| Particles | Unchanged shader | Still driven by `getVaultFlow` |
 
 ---
 
