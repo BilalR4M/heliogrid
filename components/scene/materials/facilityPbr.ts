@@ -297,31 +297,29 @@ export function createArrayPanelMaterial(): THREE.MeshPhysicalMaterial {
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, thermalUniforms);
 
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        "#include <common>",
-        /* glsl */ `#include <common>
-attribute float aTemp;
+    // Inject at void main() — more reliable than post-#include <common>
+    // under Three r185 (WebGL2 / GLSL3), where the common-anchor replace
+    // can leave varyings undeclared and fail vertex compile.
+    shader.vertexShader = shader.vertexShader.replace(
+      "void main() {",
+      /* glsl */ `attribute float aTemp;
 attribute float aSelect;
-varying float vPanel;
-varying float vSelect;`,
-      )
-      .replace(
-        "#include <begin_vertex>",
-        /* glsl */ `#include <begin_vertex>
+varying float vTemp;
+varying float vSelect;
+void main() {
 vTemp = aTemp;
 vSelect = aSelect;`,
-      );
+    );
 
     shader.fragmentShader = shader.fragmentShader
       .replace(
-        "#include <common>",
-        /* glsl */ `#include <common>
-uniform float uThermal;
+        "void main() {",
+        /* glsl */ `uniform float uThermal;
 uniform vec3 uSelectColor;
 varying float vTemp;
 varying float vSelect;
-${thermalRampGlsl}`,
+${thermalRampGlsl}
+void main() {`,
       )
       .replace(
         "#include <opaque_fragment>",
@@ -334,7 +332,7 @@ outgoingLight = mix(outgoingLight, uSelectColor, vSelect * 0.6);
     mat.userData.shader = shader;
   };
 
-  mat.customProgramCacheKey = () => "heliogrid-array-panel-thermal-v2";
+  mat.customProgramCacheKey = () => "heliogrid-array-panel-thermal-v3";
   return mat;
 }
 
