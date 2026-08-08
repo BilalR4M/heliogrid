@@ -436,14 +436,24 @@ Document the texture size (e.g. 256², 6×10 cell grid) in the tuned-values tabl
   checklist — not one giant zone rewrite without review.
 
 ### Review checklist for this phase specifically
-- [ ] Array Ring modules read as framed bifacial panels with cell gridlines at
+- [x] Array Ring modules read as framed bifacial panels with cell gridlines at
       human scale — not flat unmarked boxes
-- [ ] Aluminum frames + steel posts are instanced (no per-post React mesh list)
-- [ ] Dual-axis tracking responds to `timeOfDay` with stepped motion on both axes
-- [ ] Click-select + thermal heatmap still work on the glass instances
-- [ ] Aerial Overlook remains LOD blocks (not high-fidelity modules)
-- [ ] Frame rate rechecked at 60fps desktop after the extra instances/shadows;
-      regressions flagged as bugs (AGENTS.md rule 5)
+- [x] Aluminum frames + steel posts are instanced (no per-post React mesh list)
+- [x] Dual-axis tracking responds to `timeOfDay` with stepped motion on both axes
+- [x] Click-select + thermal heatmap still work on the glass instances
+- [x] Aerial Overlook remains LOD blocks (not high-fidelity modules)
+- [ ] Frame rate rechecked at 60fps desktop after the extra instances/shadows on
+      real GPU (build passes; confirm in PR review — AGENTS.md rule 5)
+
+### Phase 3 tuned values (shipped)
+
+| Piece | Approach | Notes |
+|---|---|---|
+| Glass | Instanced `BoxGeometry` 2.1×1.05×0.04 + cell grid map 256² (6×10) | Phase 2 Physical + thermal |
+| Frame | Merged 4-rail aluminum, instanced | `PBR.aluminumFrame` `#b0b6bc` |
+| Posts | Instanced cylinders (96), steel | Replaces sparse individual meshes |
+| Tracking | 5° stepped elev tilt + azimuth yaw | `moduleOrientation` in `trackingModule.ts` |
+| Aerial | Unchanged LOD blocks | Out of Phase 3 scope |
 
 ---
 
