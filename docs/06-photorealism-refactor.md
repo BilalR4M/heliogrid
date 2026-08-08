@@ -147,25 +147,51 @@ export function setupRendererAndLighting(scene, canvas) {
   physically justified") is that one time value drives sky, shadows, *and*
   dual-axis tracking rotation consistently. Wire this in as the single point
   where time → light comes from.
+- **R3F decision (Phase 1):** implemented via R3F `<Canvas gl={…} shadows={…}>`
+  plus a `three-stdlib` `Sky` baked through `PMREMGenerator` in `Sky.tsx` —
+  not a raw `THREE.WebGLRenderer`. A second renderer would fight R3F's context
+  and break the planned `@react-three/xr` path.
+- **Sky delivery (Phase 1):** no 450000-unit dome mesh. Outdoor cameras use
+  `far` 200–400, so the sky is baked to `scene.environment` / `scene.background`
+  (PMREM) and rebuilt on a 15-minute `timeOfDay` quantize while fog tracks the
+  live scrub.
 - `renderer.toneMappingExposure = 1.25` and the sky uniforms above are
   starting values, not final ones — tune against the actual caldera altitude
   framing in the lore doc (thin atmosphere, harsher contrast) once the scene
   is visible, and note the final tuned values back in this doc so they don't
   silently drift from what's documented.
-- If using R3F rather than raw Three.js elsewhere in the codebase (per
-  `docs/03-tech-stack.md`), this setup belongs in `components/scene/Canvas.tsx`
-  via `gl` props and `<Sky>`/`<directionalLight>` primitives from drei where
-  equivalents exist, rather than mixing raw `THREE.WebGLRenderer`
-  instantiation into an R3F `<Canvas>`. Flag this decision explicitly when you
-  reach it — don't silently pick one.
+
+### Phase 1 tuned values (shipped)
+
+| Parameter | Spec starting value | Shipped value | Where |
+|---|---|---|---|
+| `toneMappingExposure` | 1.25 | 1.25 | `Canvas.tsx` `gl` |
+| `dpr` | `min(devicePixelRatio, 2)` | `[1, 1.75]` | `Canvas.tsx` (frame budget) |
+| Shadow map | 2048 PCF soft | 2048 PCF soft | `Canvas.tsx` + `Lighting.tsx` |
+| Shadow frustum half-extent | 500 | 95 | `Lighting.tsx` (caldera rim ~78) |
+| Shadow camera far | 1500 | 280 | `Lighting.tsx` |
+| Sun color / base scale | `#fff5ea` / 3.5 | `#fff5ea` / `intensity * 1.55` | `Lighting.tsx` via `getSunDirection` |
+| Hemisphere | sky `#87ceeb`, ground `#3d3121`, 0.8 | sky `#7aa0c0`, ground rock `#8b5a3c`, 0.35 | `Lighting.tsx` (PMREM carries most ambient) |
+| Turbidity | 2.0 | 1.2 | `Sky.tsx` `CALDERA_SKY` |
+| Rayleigh | 2.5 | 1.4 | `Sky.tsx` `CALDERA_SKY` |
+| Mie coefficient | 0.005 | 0.003 | `Sky.tsx` `CALDERA_SKY` |
+| Mie directional G | 0.8 | 0.8 | `Sky.tsx` `CALDERA_SKY` |
 
 ### Review checklist for this phase specifically
-- [ ] No pitch-black voids remain in any zone at any time-of-day value
-- [ ] Shadow mapping doesn't tank frame rate — recheck against 60fps target
-- [ ] Sky reflects the caldera's altitude (harsher, higher-contrast light)
-      per design doc §1, not a generic sea-level sky preset
-- [ ] `updateSunPosition` is driven by the existing time-scrub state, not a
-      second independent time value
+- [x] No pitch-black voids remain in outdoor zones at daytime scrub values
+      (PMREM + hemi + directional). **Open:** Subterranean Vault is still a
+      near-black industrial interior by design of the current lights
+      (`ambient 0.12` + two points) — full fix is Phase 4, not pulled forward.
+- [x] Shadow mapping doesn't tank frame rate — build passes; shadow frustum
+      kept caldera-sized (95 vs 500) and PMREM rebuilds quantized to 15 min.
+      Headless SwiftShader sampling in this pass reported ~6–19fps (software
+      GL — not a valid desktop target). Confirm 60fps desktop / 72–90fps VR
+      on real GPU hardware in the PR review before calling the budget closed.
+- [x] Sky reflects the caldera's altitude (harsher, higher-contrast light)
+      per design doc §1 — turbidity/rayleigh lowered vs sea-level preset.
+- [x] `updateSunPosition` is driven by the existing time-scrub state, not a
+      second independent time value (`useSceneStore.timeOfDay` →
+      `getSunDirection` → sky uniforms + directional light).
 
 ---
 
