@@ -90,3 +90,48 @@ export function getPanelThermalNorm(panelId: number, timeOfDay: number): number 
   const twin = getPanelTwin(panelId, timeOfDay);
   return Math.min(1, Math.max(0, (twin.cellTempC - 20) / 45));
 }
+
+export type VaultFlowMode = "charge" | "discharge" | "idle";
+
+export type VaultFlow = {
+  mode: VaultFlowMode;
+  /** Signed flow: + charge into storage, − discharge to grid (MW). */
+  flowMw: number;
+  /** State of charge 0–100 from simulated day/night demand curve. */
+  socPct: number;
+  /** Particle density scalar for the vault shader. */
+  density: number;
+};
+
+/**
+ * Day/night demand curve for the LFP vault.
+ * Daytime solar surplus → charge; evening/night demand → discharge.
+ */
+export function getVaultFlow(timeOfDay: number): VaultFlow {
+  const overlook = getOverlookHud(timeOfDay);
+  const nameplateMw = facilitySpec.nameplateCapacityGw * 1000;
+  // Demand peaks evening; generation peaks midday.
+  const demand =
+    0.35 +
+    0.45 * Math.max(0, Math.sin(((timeOfDay - 18) / 12) * Math.PI)) +
+    0.15 * Math.max(0, Math.sin(((timeOfDay - 8) / 10) * Math.PI));
+  const generation = overlook.powerMw / nameplateMw;
+  const balance = generation - demand;
+
+  let mode: VaultFlowMode = "idle";
+  if (balance > 0.05) mode = "charge";
+  else if (balance < -0.05) mode = "discharge";
+
+  const flowMw = balance * nameplateMw * 0.55;
+  // SOC integrates a smooth day curve (not a real integrator — deterministic snapshot).
+  const socPct = 42 + 38 * Math.sin(((timeOfDay - 4) / 24) * Math.PI * 2);
+  const density =
+    mode === "idle" ? 0.25 : Math.min(1, 0.35 + Math.abs(balance) * 1.4);
+
+  return {
+    mode,
+    flowMw,
+    socPct: Math.min(96, Math.max(18, socPct)),
+    density,
+  };
+}

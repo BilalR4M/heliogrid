@@ -10,6 +10,9 @@ type SceneState = {
   thermalHeatmap: boolean;
   /** HelioSpire light-beam vector visualization. */
   lightVectors: boolean;
+  /** Vault elevator: 0 at surface, 1 at vault floor. */
+  elevatorProgress: number;
+  elevatorActive: boolean;
   setZone: (zone: ZoneId) => void;
   setTimeOfDay: (hours: number) => void;
   selectPanel: (id: number | null) => void;
@@ -17,6 +20,8 @@ type SceneState = {
   toggleThermalHeatmap: () => void;
   setLightVectors: (enabled: boolean) => void;
   toggleLightVectors: () => void;
+  setElevatorProgress: (progress: number) => void;
+  setElevatorActive: (active: boolean) => void;
 };
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -25,10 +30,14 @@ export const useSceneStore = create<SceneState>((set) => ({
   selectedPanelId: null,
   thermalHeatmap: false,
   lightVectors: true,
+  elevatorProgress: 0,
+  elevatorActive: false,
   setZone: (zone) =>
     set({
       currentZone: zone,
       selectedPanelId: null,
+      elevatorProgress: zone === "subterranean-vault" ? 0 : 1,
+      elevatorActive: zone === "subterranean-vault",
     }),
   setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
   selectPanel: (id) => set({ selectedPanelId: id }),
@@ -38,4 +47,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   setLightVectors: (enabled) => set({ lightVectors: enabled }),
   toggleLightVectors: () =>
     set((state) => ({ lightVectors: !state.lightVectors })),
+  setElevatorProgress: (progress) =>
+    set({ elevatorProgress: Math.min(1, Math.max(0, progress)) }),
+  setElevatorActive: (active) => set({ elevatorActive: active }),
 }));
