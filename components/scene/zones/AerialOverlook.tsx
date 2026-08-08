@@ -2,7 +2,11 @@
 
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { SCENE_COLORS } from "@/components/scene/PlaceholderCaldera";
+import {
+  createPanelMaterial,
+  createReceiverMaterial,
+  createSteelMaterial,
+} from "@/components/scene/materials/facilityPbr";
 
 const RING_DEFS = [
   { radius: 28, count: 36, scale: [3.2, 0.12, 1.6] as const },
@@ -23,15 +27,9 @@ export default function AerialOverlook() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const material = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: SCENE_COLORS.panel,
-        roughness: 0.32,
-        metalness: 0.72,
-      }),
-    [],
-  );
+  const material = useMemo(() => createPanelMaterial("lod"), []);
+  const steel = useMemo(() => createSteelMaterial(), []);
+  const receiver = useMemo(() => createReceiverMaterial(), []);
 
   useLayoutEffect(() => {
     const mesh = meshRef.current;
@@ -60,6 +58,15 @@ export default function AerialOverlook() {
     mesh.computeBoundingSphere();
   }, []);
 
+  useLayoutEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+      steel.dispose();
+      receiver.dispose();
+    };
+  }, [geometry, material, steel, receiver]);
+
   return (
     <group>
       <instancedMesh
@@ -71,21 +78,11 @@ export default function AerialOverlook() {
       />
 
       {/* Central Optics Tower — aerial-scale stand-in for the 250m spire */}
-      <mesh position={[0, 12, 0]} castShadow>
+      <mesh position={[0, 12, 0]} castShadow material={steel}>
         <cylinderGeometry args={[0.55, 1.6, 24, 8]} />
-        <meshStandardMaterial
-          color={SCENE_COLORS.steel}
-          roughness={0.4}
-          metalness={0.85}
-        />
       </mesh>
-      <mesh position={[0, 25.2, 0]} castShadow>
+      <mesh position={[0, 25.2, 0]} castShadow material={receiver}>
         <coneGeometry args={[1.4, 3.2, 8]} />
-        <meshStandardMaterial
-          color={SCENE_COLORS.steel}
-          roughness={0.35}
-          metalness={0.9}
-        />
       </mesh>
     </group>
   );

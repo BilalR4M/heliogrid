@@ -4,10 +4,11 @@ import { ThreeEvent, useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
-  thermalHeatmapFragment,
-  thermalHeatmapVertex,
-} from "@/components/scene/shaders/thermalHeatmap.glsl";
-import { SCENE_COLORS } from "@/components/scene/PlaceholderCaldera";
+  createArrayPanelMaterial,
+  createRockMaterial,
+  createSteelMaterial,
+  setArrayPanelThermal,
+} from "@/components/scene/materials/facilityPbr";
 import {
   getOverlookHud,
   getPanelThermalNorm,
@@ -29,11 +30,14 @@ const PANEL_DEPTH = 0.06;
  */
 export default function ArrayRingAlpha() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
+  const materialRef = useRef<THREE.MeshPhysicalMaterial | null>(null);
   const timeOfDay = useSceneStore((s) => s.timeOfDay);
   const thermalHeatmap = useSceneStore((s) => s.thermalHeatmap);
   const selectedPanelId = useSceneStore((s) => s.selectedPanelId);
   const selectPanel = useSceneStore((s) => s.selectPanel);
+
+  const steel = useMemo(() => createSteelMaterial(), []);
+  const pad = useMemo(() => createRockMaterial("calderaRing"), []);
 
   const { geometry, material } = useMemo(() => {
     const geo = new THREE.BoxGeometry(PANEL_WIDTH, PANEL_HEIGHT, PANEL_DEPTH);
@@ -46,16 +50,7 @@ export default function ArrayRingAlpha() {
     geo.setAttribute("aTemp", new THREE.InstancedBufferAttribute(temps, 1));
     geo.setAttribute("aSelect", new THREE.InstancedBufferAttribute(selects, 1));
 
-    const mat = new THREE.ShaderMaterial({
-      uniforms: {
-        uThermal: { value: 0 },
-        uPanelColor: { value: new THREE.Color(SCENE_COLORS.panel) },
-        uSelectColor: { value: new THREE.Color("#4ec9e8") },
-      },
-      vertexShader: thermalHeatmapVertex,
-      fragmentShader: thermalHeatmapFragment,
-    });
-
+    const mat = createArrayPanelMaterial();
     return { geometry: geo, material: mat };
   }, []);
 
@@ -64,8 +59,10 @@ export default function ArrayRingAlpha() {
     return () => {
       geometry.dispose();
       material.dispose();
+      steel.dispose();
+      pad.dispose();
     };
-  }, [geometry, material]);
+  }, [geometry, material, steel, pad]);
 
   useLayoutEffect(() => {
     const mesh = meshRef.current;
@@ -122,7 +119,7 @@ export default function ArrayRingAlpha() {
 
   useFrame(() => {
     if (!materialRef.current) return;
-    materialRef.current.uniforms.uThermal.value = thermalHeatmap ? 1 : 0;
+    setArrayPanelThermal(materialRef.current, thermalHeatmap);
   });
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
@@ -138,9 +135,9 @@ export default function ArrayRingAlpha() {
         rotation={[-Math.PI / 2, 0, 0]}
         position={[40, 0.02, 40]}
         receiveShadow
+        material={pad}
       >
         <circleGeometry args={[22, 48]} />
-        <meshStandardMaterial color="#6e4530" roughness={0.98} metalness={0} />
       </mesh>
 
       {ROW_RADIUS.map((radius, row) =>
@@ -156,13 +153,9 @@ export default function ArrayRingAlpha() {
                 0.55,
                 Math.sin(angle) * radius,
               ]}
+              material={steel}
             >
               <cylinderGeometry args={[0.06, 0.08, 1.1, 6]} />
-              <meshStandardMaterial
-                color={SCENE_COLORS.steel}
-                roughness={0.45}
-                metalness={0.8}
-              />
             </mesh>
           );
         }),

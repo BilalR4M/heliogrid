@@ -308,18 +308,29 @@ day mode gets clearcoat — the scrub would expose a material discontinuity.
   material dump.
 
 ### Review checklist for this phase specifically
-- [ ] Outdoor meshes respond visibly to PMREM + sun (specular on steel/glass,
+- [x] Outdoor meshes respond visibly to PMREM + sun (specular on steel/glass,
       soft bounce on rock) — no remaining flat unlit look outdoors
-- [ ] Bifacial panels use clearcoat (`MeshPhysicalMaterial` or equivalent) at
-      Array Ring Alpha human scale
-- [ ] Thermal heatmap toggle still works and does not fall back to a flat
-      unlit shader while Physical day materials look correct
-- [ ] Vault interior deliberately unchanged (Phase 4) — called out, not silently
+- [x] Bifacial panels use clearcoat (`MeshPhysicalMaterial`) at Array Ring
+      Alpha human scale; aerial LOD uses reduced clearcoat (`panelLod`)
+- [x] Thermal heatmap toggle still works via `MeshPhysicalMaterial` +
+      `onBeforeCompile` (ramp lives in `thermalHeatmap.glsl.ts`) — not a flat
+      unlit fallback
+- [x] Vault interior deliberately unchanged (Phase 4) — called out, not silently
       “half upgraded”
-- [ ] Shared PBR presets live in one module; zone files don’t reintroduce
-      one-off roughness/metalness literals for the same surface types
-- [ ] Frame rate rechecked against 60fps desktop target after clearcoat; any
-      regression flagged as a bug (AGENTS.md rule 5), not a note in passing
+- [x] Shared PBR presets live in `components/scene/materials/facilityPbr.ts`;
+      outdoor zone files consume factories instead of one-off literals
+- [ ] Frame rate rechecked against 60fps desktop target after clearcoat on real
+      GPU (build passes; confirm in PR review — AGENTS.md rule 5)
+
+### Phase 2 tuned values (shipped)
+
+| Surface | Material | Key params | Module |
+|---|---|---|---|
+| Panel glass (Array Ring) | `MeshPhysicalMaterial` | roughness 0.18, metalness 0.55, clearcoat 1.0 / 0.08, env 1.15 | `PBR.panelGlass` |
+| Panel LOD (Aerial) | `MeshPhysicalMaterial` | clearcoat 0.35 / 0.2 (cheaper at distance) | `PBR.panelLod` |
+| Galvanized steel | `MeshStandardMaterial` | roughness 0.38, metalness 0.88, env 1.0 | `PBR.galvanizedSteel` |
+| Caldera rock / ring / rim | `MeshStandardMaterial` + procedural normal 128² | env 0.45–0.55 | `createRockMaterial` |
+| Receiver core | `MeshStandardMaterial` | emissive amber 1.4 | `PBR.receiverCore` |
 
 ---
 
