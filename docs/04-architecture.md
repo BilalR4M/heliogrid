@@ -120,6 +120,11 @@ docs/                        # Kept up to date as decisions are made; 00-project
 11. **Technical case study panel + performance audit**: verify the panel's
     claims against actual measured frame rates and confirm compression/LOD
     numbers are accurate before publishing them. Review gate.
+12. **Photorealism refactor**: renderer calibration, atmospheric sky lighting,
+    PBR materials, detailed array instancing, vault interior lighting, and
+    post-processing — phased per `docs/06-photorealism-refactor.md`. Each
+    phase is its own review-gated set of commits; do not start Phase N+1
+    before Phase N is reviewed and merged. Review gate per phase.
 
 Each numbered step is its own set of commits per the git workflow doc — not one
 commit per step, but no step's work should be commit-ready without review as
