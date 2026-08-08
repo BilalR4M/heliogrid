@@ -62,6 +62,36 @@ export const PBR = {
     metalness: 0.35,
     envMapIntensity: 0.8,
   },
+  vaultFloor: {
+    color: "#12161c",
+    roughness: 0.88,
+    metalness: 0.18,
+    envMapIntensity: 0.25,
+  },
+  vaultShaft: {
+    color: "#1a1f28",
+    roughness: 0.92,
+    metalness: 0.22,
+    envMapIntensity: 0.2,
+  },
+  vaultRack: {
+    color: SCENE_COLORS.panel,
+    roughness: 0.42,
+    metalness: 0.55,
+    envMapIntensity: 0.35,
+  },
+  vaultBus: {
+    color: SCENE_COLORS.steel,
+    roughness: 0.28,
+    metalness: 0.92,
+    envMapIntensity: 0.5,
+  },
+  vaultConduit: {
+    color: "#2a323c",
+    roughness: 0.45,
+    metalness: 0.7,
+    envMapIntensity: 0.4,
+  },
 } as const;
 
 export type RockPreset = "calderaRock" | "calderaRing" | "calderaRim";
@@ -195,6 +225,56 @@ export function createRockMaterial(
 
 export function createReceiverMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ ...PBR.receiverCore });
+}
+
+export function createVaultFloorMaterial(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ ...PBR.vaultFloor });
+}
+
+export function createVaultShaftMaterial(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    ...PBR.vaultShaft,
+    side: THREE.BackSide,
+  });
+}
+
+export function createVaultBusMaterial(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ ...PBR.vaultBus });
+}
+
+export function createVaultConduitMaterial(
+  emissive: string,
+  emissiveIntensity: number,
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    ...PBR.vaultConduit,
+    emissive,
+    emissiveIntensity,
+  });
+}
+
+export function createVaultRackMaterial(
+  emissive: string,
+  emissiveIntensity: number,
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    ...PBR.vaultRack,
+    emissive,
+    emissiveIntensity,
+  });
+}
+
+export function createVaultStatusStripMaterial(
+  emissive: string,
+  emissiveIntensity: number,
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    color: "#0a0c10",
+    roughness: 0.35,
+    metalness: 0.4,
+    emissive,
+    emissiveIntensity,
+  });
 }
 
 type ThermalUniforms = {
