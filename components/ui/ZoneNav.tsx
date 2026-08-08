@@ -12,7 +12,7 @@ const ENABLED_ZONES: ZoneId[] = [
 
 export default function ZoneNav() {
   const currentZone = useSceneStore((s) => s.currentZone);
-  const setZone = useSceneStore((s) => s.setZone);
+  const requestZone = useSceneStore((s) => s.requestZone);
 
   return (
     <nav
@@ -27,7 +27,7 @@ export default function ZoneNav() {
             key={zone.id}
             type="button"
             disabled={!enabled}
-            onClick={() => setZone(zone.id)}
+            onClick={() => requestZone(zone.id)}
             aria-current={active ? "true" : undefined}
             title={enabled ? zone.name : `${zone.name} — coming online`}
             className={`shrink-0 px-2.5 py-2 text-[10px] tracking-[0.12em] uppercase transition-colors sm:px-3 ${

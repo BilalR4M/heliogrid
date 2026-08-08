@@ -10,6 +10,7 @@ import HelioSpireTower from "@/components/scene/zones/HelioSpireTower";
 import SubterraneanVault from "@/components/scene/zones/SubterraneanVault";
 import Lighting from "@/components/scene/Lighting";
 import Sky from "@/components/scene/Sky";
+import SpatialAudioRig from "@/components/scene/SpatialAudioRig";
 import Terrain from "@/components/scene/Terrain";
 import { SCENE_COLORS } from "@/components/scene/PlaceholderCaldera";
 import type { ZoneId } from "@/content/zones";
@@ -167,6 +168,7 @@ export default function ExperienceCanvas() {
         shadows
       >
         <ZoneView />
+        <SpatialAudioRig />
         <OrbitControls
           makeDefault
           enablePan={false}
