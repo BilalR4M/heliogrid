@@ -8,11 +8,15 @@ type SceneState = {
   /** Selected Array Ring Alpha panel instance id, or null. */
   selectedPanelId: number | null;
   thermalHeatmap: boolean;
+  /** HelioSpire light-beam vector visualization. */
+  lightVectors: boolean;
   setZone: (zone: ZoneId) => void;
   setTimeOfDay: (hours: number) => void;
   selectPanel: (id: number | null) => void;
   setThermalHeatmap: (enabled: boolean) => void;
   toggleThermalHeatmap: () => void;
+  setLightVectors: (enabled: boolean) => void;
+  toggleLightVectors: () => void;
 };
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -20,6 +24,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   timeOfDay: 13.0,
   selectedPanelId: null,
   thermalHeatmap: false,
+  lightVectors: true,
   setZone: (zone) =>
     set({
       currentZone: zone,
@@ -30,4 +35,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   setThermalHeatmap: (enabled) => set({ thermalHeatmap: enabled }),
   toggleThermalHeatmap: () =>
     set((state) => ({ thermalHeatmap: !state.thermalHeatmap })),
+  setLightVectors: (enabled) => set({ lightVectors: enabled }),
+  toggleLightVectors: () =>
+    set((state) => ({ lightVectors: !state.lightVectors })),
 }));
