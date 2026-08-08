@@ -4,10 +4,13 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
+  createReceiverMaterial,
+  createSteelMaterial,
+} from "@/components/scene/materials/facilityPbr";
+import {
   lightVectorsFragment,
   lightVectorsVertex,
 } from "@/components/scene/shaders/lightVectors.glsl";
-import { SCENE_COLORS } from "@/components/scene/PlaceholderCaldera";
 import { useSceneStore } from "@/lib/scene-state";
 
 const RECEIVER = new THREE.Vector3(0, 25.6, 0);
@@ -88,7 +91,6 @@ function LightVectorBeams() {
   useFrame((_, delta) => {
     if (!materialRef.current) return;
     materialRef.current.uniforms.uTime.value += delta;
-    // Daylight strengthens beam visibility; night dims but does not hide when toggled on.
     const day = Math.max(0.25, Math.sin(((timeOfDay - 6) / 12) * Math.PI));
     materialRef.current.uniforms.uIntensity.value = lightVectors ? day : 0;
   });
@@ -109,36 +111,32 @@ function LightVectorBeams() {
  * Mounted with the aerial LOD field for a 360° view; adds deck + converging beams.
  */
 export default function HelioSpireTower() {
+  const steel = useMemo(() => createSteelMaterial(), []);
+  const rail = useMemo(
+    () => createSteelMaterial({ roughness: 0.4, metalness: 0.9 }),
+    [],
+  );
+  const receiver = useMemo(() => createReceiverMaterial(), []);
+
+  useLayoutEffect(() => {
+    return () => {
+      steel.dispose();
+      rail.dispose();
+      receiver.dispose();
+    };
+  }, [steel, rail, receiver]);
+
   return (
     <group>
-      {/* Observation deck ring (~250m lore stand-in at aerial scale) */}
-      <mesh position={[0, 23.4, 0]} receiveShadow>
+      <mesh position={[0, 23.4, 0]} receiveShadow material={steel}>
         <cylinderGeometry args={[3.2, 3.2, 0.25, 24]} />
-        <meshStandardMaterial
-          color={SCENE_COLORS.steel}
-          roughness={0.45}
-          metalness={0.75}
-        />
       </mesh>
-      <mesh position={[0, 24.1, 0]}>
+      <mesh position={[0, 24.1, 0]} material={rail}>
         <torusGeometry args={[3.15, 0.06, 6, 40]} />
-        <meshStandardMaterial
-          color={SCENE_COLORS.steel}
-          roughness={0.4}
-          metalness={0.85}
-        />
       </mesh>
 
-      {/* Receiver core */}
-      <mesh position={[0, 25.6, 0]}>
+      <mesh position={[0, 25.6, 0]} material={receiver}>
         <sphereGeometry args={[0.55, 16, 16]} />
-        <meshStandardMaterial
-          color="#fff1d6"
-          emissive="#e0a53a"
-          emissiveIntensity={1.4}
-          roughness={0.25}
-          metalness={0.4}
-        />
       </mesh>
       <pointLight
         position={[0, 25.6, 0]}
