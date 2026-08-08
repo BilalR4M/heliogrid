@@ -3,7 +3,7 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect } from "react";
-import { ACESFilmicToneMapping, PCFSoftShadowMap } from "three";
+import { ACESFilmicToneMapping, PCFShadowMap } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import AerialOverlook from "@/components/scene/zones/AerialOverlook";
 import ArrayRingAlpha from "@/components/scene/zones/ArrayRingAlpha";
@@ -171,7 +171,7 @@ export default function ExperienceCanvas() {
           toneMapping: ACESFilmicToneMapping,
           toneMappingExposure: 1.25,
         }}
-        shadows={{ type: PCFSoftShadowMap }}
+        shadows={{ type: PCFShadowMap }}
       >
         <ZoneView />
         <SpatialAudioRig />
