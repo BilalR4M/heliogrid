@@ -30,6 +30,12 @@ export const PBR = {
     metalness: 0.88,
     envMapIntensity: 1.0,
   },
+  aluminumFrame: {
+    color: "#b0b6bc",
+    roughness: 0.32,
+    metalness: 0.78,
+    envMapIntensity: 1.05,
+  },
   calderaRock: {
     color: SCENE_COLORS.rock,
     roughness: 0.92,
@@ -111,6 +117,71 @@ export function createSteelMaterial(
   });
 }
 
+export function createAluminumMaterial(
+  overrides: THREE.MeshStandardMaterialParameters = {},
+): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    ...PBR.aluminumFrame,
+    ...overrides,
+  });
+}
+
+/** Monocrystalline cell grid for bifacial glass — 256² CanvasTexture. */
+export function createCellGridTexture(
+  cols = 6,
+  rows = 10,
+  size = 256,
+): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("createCellGridTexture: 2D context unavailable");
+  }
+
+  ctx.fillStyle = SCENE_COLORS.panel;
+  ctx.fillRect(0, 0, size, size);
+
+  const inset = size * 0.04;
+  const cellW = (size - inset * 2) / cols;
+  const cellH = (size - inset * 2) / rows;
+
+  ctx.strokeStyle = "rgba(90, 120, 150, 0.55)";
+  ctx.lineWidth = Math.max(1, size / 256);
+  for (let c = 0; c <= cols; c += 1) {
+    const x = inset + c * cellW;
+    ctx.beginPath();
+    ctx.moveTo(x, inset);
+    ctx.lineTo(x, size - inset);
+    ctx.stroke();
+  }
+  for (let r = 0; r <= rows; r += 1) {
+    const y = inset + r * cellH;
+    ctx.beginPath();
+    ctx.moveTo(inset, y);
+    ctx.lineTo(size - inset, y);
+    ctx.stroke();
+  }
+
+  // Busbars
+  ctx.strokeStyle = "rgba(180, 190, 200, 0.35)";
+  ctx.lineWidth = Math.max(1.5, size / 128);
+  for (let c = 0; c < cols; c += 1) {
+    const x = inset + (c + 0.5) * cellW;
+    ctx.beginPath();
+    ctx.moveTo(x, inset);
+    ctx.lineTo(x, size - inset);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 export function createRockMaterial(
   preset: RockPreset = "calderaRock",
   overrides: THREE.MeshStandardMaterialParameters = {},
@@ -183,7 +254,7 @@ outgoingLight = mix(outgoingLight, uSelectColor, vSelect * 0.6);
     mat.userData.shader = shader;
   };
 
-  mat.customProgramCacheKey = () => "heliogrid-array-panel-thermal-v1";
+  mat.customProgramCacheKey = () => "heliogrid-array-panel-thermal-v2";
   return mat;
 }
 
